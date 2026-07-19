@@ -10,6 +10,9 @@ gas/SetupLocal.gs
 *.key
 *secret*
 
+# local-only setup notes (URLs, internal implementation details)
+SETUP.md
+
 # OS / editor
 .DS_Store
 Thumbs.db
