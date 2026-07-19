@@ -183,12 +183,23 @@ body {
 
 .vehicle-card {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
+  flex-direction: column;
   padding: 14px 16px;
   border-radius: 12px;
   border: 1px solid var(--color-border);
   background: #fffdfc;
+}
+
+.vehicle-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.vehicle-card.reference-card {
+  border-style: dashed;
+  background: #fbfaf8;
 }
 
 .vehicle-card.best {
@@ -231,6 +242,38 @@ body {
 .vehicle-meta {
   font-size: 0.8rem;
   color: var(--color-text-muted);
+}
+
+.vehicle-capacity {
+  font-size: 0.75rem;
+  color: var(--color-accent);
+}
+
+.type-badge {
+  display: inline-block;
+  align-self: flex-start;
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 999px;
+  margin-bottom: 2px;
+}
+
+.badge-real {
+  background: #eef3e8;
+  color: var(--color-accent);
+}
+
+.badge-reference {
+  background: #f0eef7;
+  color: #6a5c9e;
+}
+
+.reference-note {
+  margin: 8px 0 0;
+  font-size: 0.7rem;
+  color: var(--color-text-muted);
+  line-height: 1.4;
 }
 
 .vehicle-price {

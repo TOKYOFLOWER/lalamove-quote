@@ -91,6 +91,79 @@
     quoteBtn.disabled = false;
   }
 
+  /** APIの実見積結果と、pricing.jsの関東運賃表から算出した参考価格を統合したカード一覧を作る */
+  function buildVehicleCards(results) {
+    const successEntries = results.filter(r => !r.error);
+    const vehiclePricing = (typeof KANTO_VEHICLE_PRICING !== 'undefined') ? KANTO_VEHICLE_PRICING : [];
+
+    const cheapestReal = successEntries.length > 0
+      ? Math.min(...successEntries.map(e => e.total))
+      : null;
+
+    const realCards = successEntries.map(entry => {
+      const meta = vehiclePricing.find(v => v.key === entry.serviceType) || null;
+      return {
+        type: 'real',
+        key: entry.serviceType,
+        nameJa: meta ? meta.nameJa : entry.serviceType,
+        description: entry.description,
+        price: entry.total,
+        distanceM: entry.distanceM,
+        expiresAt: entry.expiresAt,
+        isBest: entry.total === cheapestReal,
+        meta: meta
+      };
+    });
+
+    // 実見積が取れた距離を参考価格の計算に流用する(車種が変わっても経路距離は同じとみなす)
+    const distanceSource = successEntries.length > 0 ? successEntries[0].distanceM : null;
+    const matchedKeys = new Set(successEntries.map(e => e.serviceType));
+
+    const referenceCards = distanceSource != null
+      ? vehiclePricing
+          .filter(v => !matchedKeys.has(v.key))
+          .map(v => ({
+            type: 'reference',
+            key: v.key,
+            nameJa: v.nameJa,
+            description: v.capacityNote,
+            price: calcReferencePrice(distanceSource, v),
+            distanceM: distanceSource,
+            isBest: false,
+            meta: v
+          }))
+      : [];
+
+    return realCards.concat(referenceCards).sort((a, b) => a.price - b.price);
+  }
+
+  function renderVehicleCard(card) {
+    const el = document.createElement('div');
+    const badgeClass = card.type === 'real' ? 'badge-real' : 'badge-reference';
+    const badgeLabel = card.type === 'real' ? '実見積' : '参考価格';
+    const metaLine = card.meta
+      ? `最大${card.meta.maxLoadKg}kg・${escapeHtml(card.meta.size)}`
+      : '';
+
+    el.className = 'vehicle-card' + (card.isBest ? ' best' : '') + (card.type === 'reference' ? ' reference-card' : '');
+    el.innerHTML = `
+      <div class="vehicle-card-top">
+        <div class="vehicle-info">
+          <span class="type-badge ${badgeClass}">${badgeLabel}</span>
+          <span class="vehicle-name">${escapeHtml(card.nameJa)}</span>
+          <span class="vehicle-meta">${escapeHtml(card.description || '')} ・ ${formatKm(card.distanceM)}</span>
+          ${metaLine ? `<span class="vehicle-capacity">${metaLine}</span>` : ''}
+        </div>
+        <div class="vehicle-price">
+          <span class="price-value">${formatYen(card.price)}</span>
+          ${card.type === 'real' ? `<span class="price-expiry">${formatExpiry(card.expiresAt)}</span>` : ''}
+        </div>
+      </div>
+      ${card.type === 'reference' ? '<p class="reference-note">公式料金表による概算。ピーク割増・待機料金等は含みません</p>' : ''}
+    `;
+    return el;
+  }
+
   function renderResults(payload) {
     clearStatus();
     resultList.innerHTML = '';
@@ -103,24 +176,8 @@
       return;
     }
 
-    successEntries.sort((a, b) => a.total - b.total);
-    const cheapestTotal = successEntries[0].total;
-
-    successEntries.forEach(entry => {
-      const card = document.createElement('div');
-      card.className = 'vehicle-card' + (entry.total === cheapestTotal ? ' best' : '');
-      card.innerHTML = `
-        <div class="vehicle-info">
-          <span class="vehicle-name">${escapeHtml(entry.serviceType)}</span>
-          <span class="vehicle-meta">${escapeHtml(entry.description || '')} ・ ${formatKm(entry.distanceM)}</span>
-        </div>
-        <div class="vehicle-price">
-          <span class="price-value">${formatYen(entry.total)}</span>
-          <span class="price-expiry">${formatExpiry(entry.expiresAt)}</span>
-        </div>
-      `;
-      resultList.appendChild(card);
-    });
+    const cards = buildVehicleCards(payload.results);
+    cards.forEach(card => resultList.appendChild(renderVehicleCard(card)));
 
     errorEntries.forEach(entry => {
       const card = document.createElement('div');
