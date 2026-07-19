@@ -1,0 +1,15 @@
+# clasp / Apps Script
+.clasp.json
+gas/.clasp.json
+gas/SetupLocal.gs
+.clasprc.json
+
+# secrets
+*.env
+.env
+*.key
+*secret*
+
+# OS / editor
+.DS_Store
+Thumbs.db

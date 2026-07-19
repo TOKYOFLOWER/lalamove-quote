@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>配送料金見積 | Lalamove</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="app">
+  <header class="app-header">
+    <h1>🌸 配送料金見積</h1>
+    <p class="subtitle">お届け先を入力して、利用可能な車種の料金を比較</p>
+  </header>
+
+  <main class="card">
+    <section class="field-group">
+      <label class="field-label" for="pickup-address">集荷元（店舗）</label>
+      <div class="pickup-row">
+        <input type="text" id="pickup-address" class="text-input" readonly>
+        <button type="button" id="pickup-edit-btn" class="link-btn">変更</button>
+      </div>
+    </section>
+
+    <section class="field-group">
+      <label class="field-label" for="dest-address">お届け先住所</label>
+      <input type="text" id="dest-address" class="text-input" placeholder="例：東京都渋谷区渋谷2-24-12" autocomplete="off">
+    </section>
+
+    <button type="button" id="quote-btn" class="primary-btn">
+      <span class="btn-text">料金を調べる</span>
+    </button>
+
+    <section id="status-area" class="status-area" hidden></section>
+
+    <section id="result-area" class="result-area" hidden>
+      <h2 class="result-title">見積結果</h2>
+      <div id="result-list" class="result-list"></div>
+    </section>
+  </main>
+
+  <footer class="app-footer">
+    <p>料金は概算です。実際の料金は配車確定時に変動する場合があります。</p>
+  </footer>
+</div>
+
+<script src="config.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
