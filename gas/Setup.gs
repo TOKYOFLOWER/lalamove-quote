@@ -44,3 +44,13 @@ function testQuote() {
   Logger.log(JSON.stringify(result, null, 2));
   return result;
 }
+
+/** POST /v3/quotations の生レスポンス(HTTPコード込み)を確認するデバッグ用。 */
+function testQuoteRaw() {
+  var pickup = getPickupCoordinates_();
+  var dest = geocodeAddress_('東京都渋谷区渋谷2-24-12');
+  var result = getQuotation_('MOTORCYCLE', pickup, PropertiesService.getScriptProperties().getProperty('PICKUP_ADDRESS'), dest, '東京都渋谷区渋谷2-24-12');
+  Logger.log('HTTP ' + result.code);
+  Logger.log(JSON.stringify(result.body, null, 2));
+  return result;
+}

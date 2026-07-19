@@ -30,7 +30,11 @@ function bytesToHex_(bytes) {
 }
 
 function hmacSha256Hex_(secret, message) {
-  var signatureBytes = Utilities.computeHmacSha256Signature(message, secret);
+  // 文字列オーバーロードは非ASCII文字(日本語住所など)で既定エンコーディングが
+  // UTF-8と一致しない場合があるため、UTF-8バイト配列を明示的に渡す。
+  var keyBytes = Utilities.newBlob(secret).getBytes();
+  var messageBytes = Utilities.newBlob(message).getBytes();
+  var signatureBytes = Utilities.computeHmacSha256Signature(messageBytes, keyBytes);
   return bytesToHex_(signatureBytes);
 }
 
@@ -53,11 +57,11 @@ function lalamoveRequest_(method, path, bodyObj) {
 
   var options = {
     method: method,
+    contentType: 'application/json; charset=utf-8',
     headers: {
       'Authorization': authHeader,
       'Market': 'JP',
-      'Request-ID': Utilities.getUuid(),
-      'Content-Type': 'application/json'
+      'Request-ID': Utilities.getUuid()
     },
     muteHttpExceptions: true
   };

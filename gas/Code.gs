@@ -84,7 +84,7 @@ function handleQuote_(request) {
     var entry = { serviceType: svc.key, description: svc.description };
     try {
       var result = getQuotation_(svc.key, pickupCoords, pickupAddress, destCoords, destAddress);
-      if (result.code === 200 && result.body && result.body.data) {
+      if ((result.code === 200 || result.code === 201) && result.body && result.body.data) {
         var data = result.body.data;
         entry.total = Number(data.priceBreakdown.total);
         entry.currency = data.priceBreakdown.currency;
