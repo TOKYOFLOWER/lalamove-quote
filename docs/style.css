@@ -96,6 +96,56 @@ body {
   background: #f7f1ee;
 }
 
+.mode-tabs {
+  display: flex;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.mode-tab {
+  flex: 1;
+  padding: 10px 8px;
+  border: none;
+  background: #fffdfc;
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.mode-tab + .mode-tab {
+  border-left: 1px solid var(--color-border);
+}
+
+.mode-tab.active {
+  background: var(--color-primary);
+  color: #fff;
+}
+
+.map-container {
+  height: 300px;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+}
+
+.map-coords {
+  margin: 8px 0 0;
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  text-align: center;
+}
+
+.resolved-address-note {
+  margin: 0 0 12px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: #f4f9ef;
+  color: var(--color-text);
+  font-size: 0.82rem;
+}
+
 .link-btn {
   background: none;
   border: none;

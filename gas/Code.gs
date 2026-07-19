@@ -30,11 +30,11 @@ function doPost(e) {
 
 /**
  * action=quote のハンドラ
- * @param {{destAddress:string, pickupAddress?:string, serviceTypes?:string[]}} request
+ * @param {{destAddress?:string, destLat?:number|string, destLng?:number|string, pickupAddress?:string, serviceTypes?:string[]}} request
  */
 function handleQuote_(request) {
-  var destAddress = request.destAddress;
-  if (!destAddress) {
+  var hasDestCoords = request.destLat != null && request.destLat !== '' && request.destLng != null && request.destLng !== '';
+  if (!request.destAddress && !hasDestCoords) {
     return { ok: false, error: 'MISSING_DEST_ADDRESS', message: 'お届け先住所を入力してください' };
   }
 
@@ -54,10 +54,18 @@ function handleQuote_(request) {
   }
 
   var destCoords;
-  try {
-    destCoords = geocodeAddress_(destAddress);
-  } catch (e) {
-    return { ok: false, error: 'GEOCODE_FAILED', message: 'お届け先住所を認識できませんでした。住所を確認してください。' };
+  var destAddress;
+  if (hasDestCoords) {
+    // 地図ピン選択モード: 座標はそのまま使い、Lalamoveのaddress必須項目用に逆ジオコーディングする
+    destCoords = { lat: Number(request.destLat), lng: Number(request.destLng) };
+    destAddress = reverseGeocodeAddress_(destCoords.lat, destCoords.lng);
+  } else {
+    destAddress = request.destAddress;
+    try {
+      destCoords = geocodeAddress_(destAddress);
+    } catch (e) {
+      return { ok: false, error: 'GEOCODE_FAILED', message: 'お届け先住所を認識できませんでした。住所を確認してください。' };
+    }
   }
 
   var allServiceTypes = getJapanServiceTypes_();

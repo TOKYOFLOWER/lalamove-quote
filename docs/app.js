@@ -13,14 +13,27 @@
   };
 
   const PICKUP_STORAGE_KEY = 'lalamove_pickup_address_override';
+  // 集荷元(銀座1-20-2)のジオコーディング済み座標。地図の初期中心にのみ使用する。
+  const PICKUP_APPROX_COORDS = { lat: 35.6729469, lng: 139.7705724 };
 
   const pickupInput = document.getElementById('pickup-address');
   const pickupEditBtn = document.getElementById('pickup-edit-btn');
   const destInput = document.getElementById('dest-address');
   const quoteBtn = document.getElementById('quote-btn');
+  const quoteBtnText = quoteBtn.querySelector('.btn-text');
   const statusArea = document.getElementById('status-area');
   const resultArea = document.getElementById('result-area');
   const resultList = document.getElementById('result-list');
+  const resolvedAddressNote = document.getElementById('resolved-address-note');
+  const modeTabs = document.querySelectorAll('.mode-tab');
+  const addressModeSection = document.getElementById('address-mode-section');
+  const mapModeSection = document.getElementById('map-mode-section');
+  const mapCoordsEl = document.getElementById('map-coords');
+
+  let currentMode = 'address';
+  let selectedCoords = null;
+  let map = null;
+  let marker = null;
 
   function localizeError(code, fallbackMessage) {
     return ERROR_MESSAGES[code] || fallbackMessage || 'エラーが発生しました';
@@ -50,6 +63,58 @@
   function initPickupField() {
     pickupInput.value = loadPickupAddress();
   }
+
+  function updateMapCoordsDisplay() {
+    mapCoordsEl.textContent = selectedCoords
+      ? `選択座標: ${selectedCoords.lat.toFixed(4)}, ${selectedCoords.lng.toFixed(4)}`
+      : '地図をタップしてピンを設置してください';
+  }
+
+  function setMarker(lat, lng) {
+    selectedCoords = { lat: lat, lng: lng };
+    if (marker) {
+      marker.setLatLng([lat, lng]);
+    } else {
+      marker = L.marker([lat, lng], { draggable: true }).addTo(map);
+      marker.on('dragend', () => {
+        const pos = marker.getLatLng();
+        selectedCoords = { lat: pos.lat, lng: pos.lng };
+        updateMapCoordsDisplay();
+      });
+    }
+    updateMapCoordsDisplay();
+  }
+
+  function initMapIfNeeded() {
+    if (map) return;
+    map = L.map('map').setView([PICKUP_APPROX_COORDS.lat, PICKUP_APPROX_COORDS.lng], 12);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+    }).addTo(map);
+    map.on('click', (e) => {
+      setMarker(e.latlng.lat, e.latlng.lng);
+    });
+  }
+
+  modeTabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      currentMode = tab.dataset.mode;
+      modeTabs.forEach(t => {
+        t.classList.toggle('active', t === tab);
+        t.setAttribute('aria-selected', t === tab ? 'true' : 'false');
+      });
+      addressModeSection.hidden = currentMode !== 'address';
+      mapModeSection.hidden = currentMode !== 'map';
+      quoteBtnText.textContent = currentMode === 'map' ? 'この場所で料金を調べる' : '料金を調べる';
+
+      if (currentMode === 'map') {
+        initMapIfNeeded();
+        // 非表示状態で初期化されたLeafletのサイズ計算がずれるため、表示後に再計算する
+        setTimeout(() => map.invalidateSize(), 50);
+      }
+    });
+  });
 
   pickupEditBtn.addEventListener('click', () => {
     const isReadonly = pickupInput.hasAttribute('readonly');
@@ -168,9 +233,10 @@
     return el;
   }
 
-  function renderResults(payload) {
+  function renderResults(payload, showResolvedAddress) {
     clearStatus();
     resultList.innerHTML = '';
+    resolvedAddressNote.hidden = true;
 
     const successEntries = payload.results.filter(r => !r.error);
     const errorEntries = payload.results.filter(r => r.error);
@@ -178,6 +244,11 @@
     if (successEntries.length === 0) {
       setError('見積を取得できる車種がありませんでした。' + (errorEntries[0] ? localizeError(errorEntries[0].error, errorEntries[0].errorMessage) : ''));
       return;
+    }
+
+    if (showResolvedAddress && payload.destAddress) {
+      resolvedAddressNote.textContent = `この住所として見積もりました: ${payload.destAddress}`;
+      resolvedAddressNote.hidden = false;
     }
 
     const cards = buildVehicleCards(payload.results);
@@ -205,19 +276,33 @@
   }
 
   async function fetchQuote() {
-    const destAddress = destInput.value.trim();
-    if (!destAddress) {
-      setError(ERROR_MESSAGES.MISSING_DEST_ADDRESS);
-      return;
+    let requestBody;
+
+    if (currentMode === 'map') {
+      if (!selectedCoords) {
+        setError('地図をタップしてお届け先を選択してください');
+        return;
+      }
+      requestBody = {
+        action: 'quote',
+        destLat: selectedCoords.lat,
+        destLng: selectedCoords.lng,
+        pickupAddress: pickupInput.value.trim()
+      };
+    } else {
+      const destAddress = destInput.value.trim();
+      if (!destAddress) {
+        setError(ERROR_MESSAGES.MISSING_DEST_ADDRESS);
+        return;
+      }
+      requestBody = {
+        action: 'quote',
+        destAddress: destAddress,
+        pickupAddress: pickupInput.value.trim()
+      };
     }
 
     setLoading();
-
-    const requestBody = {
-      action: 'quote',
-      destAddress: destAddress,
-      pickupAddress: pickupInput.value.trim()
-    };
 
     try {
       // text/plain でPOSTしてCORSプリフライトを回避する
@@ -239,7 +324,7 @@
         return;
       }
 
-      renderResults(payload);
+      renderResults(payload, currentMode === 'map');
     } catch (err) {
       setError('通信に失敗しました。ネットワーク状況をご確認ください。');
     }

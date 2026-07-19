@@ -13,6 +13,23 @@ function geocodeAddress_(address) {
 }
 
 /**
+ * 座標から住所文字列を逆引きする(地図ピン選択モード用)。
+ * Lalamove APIはstops[].addressを必須とするため、失敗時もフォールバック文字列を返す。
+ */
+function reverseGeocodeAddress_(lat, lng) {
+  try {
+    var geocoder = Maps.newGeocoder().setLanguage('ja');
+    var response = geocoder.reverseGeocode(lat, lng);
+    if (response.status === 'OK' && response.results && response.results.length > 0) {
+      return response.results[0].formatted_address;
+    }
+  } catch (e) {
+    // フォールバックへ
+  }
+  return '東京都内（座標指定）';
+}
+
+/**
  * 集荷元(店舗)座標を取得。PICKUP_ADDRESSが前回と同じならScript Propertiesのキャッシュを再利用する。
  */
 function getPickupCoordinates_() {
