@@ -96,10 +96,6 @@
     const successEntries = results.filter(r => !r.error);
     const vehiclePricing = (typeof KANTO_VEHICLE_PRICING !== 'undefined') ? KANTO_VEHICLE_PRICING : [];
 
-    const cheapestReal = successEntries.length > 0
-      ? Math.min(...successEntries.map(e => e.total))
-      : null;
-
     const realCards = successEntries.map(entry => {
       const meta = vehiclePricing.find(v => v.key === entry.serviceType) || null;
       return {
@@ -110,7 +106,6 @@
         price: entry.total,
         distanceM: entry.distanceM,
         expiresAt: entry.expiresAt,
-        isBest: entry.total === cheapestReal,
         meta: meta
       };
     });
@@ -129,12 +124,21 @@
             description: v.capacityNote,
             price: calcReferencePrice(distanceSource, v),
             distanceM: distanceSource,
-            isBest: false,
             meta: v
           }))
       : [];
 
-    return realCards.concat(referenceCards).sort((a, b) => a.price - b.price);
+    // 実見積・参考価格を統合した配列に対してソート・最安判定の両方を行う
+    // (別々の配列に対して判定すると、この2つが今後も食い違う原因になる)
+    const allCards = realCards.concat(referenceCards).sort((a, b) => a.price - b.price);
+    const cheapest = allCards.length > 0
+      ? Math.min(...allCards.map(c => c.price))
+      : null;
+    allCards.forEach(card => {
+      card.isBest = card.price === cheapest;
+    });
+
+    return allCards;
   }
 
   function renderVehicleCard(card) {
