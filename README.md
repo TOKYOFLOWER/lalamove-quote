@@ -48,6 +48,10 @@ clasp deploy --deploymentId <デプロイID>
 - Apps Scriptエディタ: `https://script.google.com/d/11Ncifx2L0WA9lZ1bDBP3Z7BnF9AJJkmMza_okXkhrcEmEnG5qGWTLBNt/edit`
 - WebアプリURL: `https://script.google.com/macros/s/AKfycbyZehgB-IWjSoEG93TS8o5n_SUfsFnnIoZ8CMFlk0IFP4phWvwoWnxtoFKpcjTkgesR/exec`
 
+> **注意**: `clasp push` はソースを反映するだけで、公開中のWebアプリURL(`/exec`)には反映されません。
+> コード変更後は必ず `clasp deploy --deploymentId <上記URLのID>` を実行してデプロイを更新してください
+> （エディタの「実行」ボタンは常に最新コードを使いますが、`/exec` URLはデプロイ時点のスナップショットです）。
+
 ### 3. APIキーの投入（初回のみ・手動）
 
 セキュリティのため、APIキー/シークレットはソースコードやGitに一切含めていません。
